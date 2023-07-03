@@ -1,2 +1,2 @@
 # szachy
-Projekt do analizy błędów debiutowych
+Projekt do analizy błędów debiutowych.
