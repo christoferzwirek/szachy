@@ -1,4 +1,4 @@
 # szachy
 # Radosław Wikrus
 praca inżynierska  
-Projekt do analizy błędów debiutowych w grze szachy.
+Projekt do wykrywania błędów debiutowych w zbiorze parti.
