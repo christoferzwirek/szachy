@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>bB.png</file>
+    <file>bK.png</file>
+    <file>bN.png</file>
+    <file>bP.png</file>
+    <file>bQ.png</file>
+    <file>bR.png</file>
+    <file>wB.png</file>
+    <file>wK.png</file>
+    <file>wN.png</file>
+    <file>wP.png</file>
+    <file>wQ.png</file>
+    <file>wR.png</file>
+    <file>chessboard.png</file>
+  </qresource>
+</RCC>
