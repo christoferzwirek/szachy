@@ -1,93 +1,154 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Aug 31 17:52:25 2023
+
+@author: radek
+"""
+
+from PyQt5 import QtGui
+from PyQt5.QtCore import Qt
 import pygame
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QPushButton, QVBoxLayout, QWidget, QHBoxLayout
+
 import chess
 
-pygame.init()
+class ChessboardWidget(QWidget):
+    def __init__(self):
+        super().__init__()
 
-# Define screen dimensions and colors
-SCREEN_WIDTH, SCREEN_HEIGHT = 600, 600
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-LIGHT_SQUARE = (240, 217, 181)  # Light square color
-DARK_SQUARE = (181, 136, 99)   # Dark square color
+        self.board = chess.Board()
+        self.SCREEN_WIDTH, self.SCREEN_HEIGHT = 400, 400
+        self.square_size = self.SCREEN_WIDTH // 8
+        self.selected_square = None  # Add this line to define the selected_square attribute
+        self.target_square = None
+        self.piece_images = {
+           'P': pygame.image.load('graph/wP.png'),  # White pawn
+           'N': pygame.image.load('graph/wN.png'),  # White knight
+           'B': pygame.image.load('graph/wB.png'),  # White bishop
+           'R': pygame.image.load('graph/wR.png'),  # White rook
+           'Q': pygame.image.load('graph/wQ.png'),  # White queen
+           'K': pygame.image.load('graph/wK.png'),  # White king
+           'p': pygame.image.load('graph/bP.png'),  # Black pawn
+           'n': pygame.image.load('graph/bN.png'),  # Black knight
+           'b': pygame.image.load('graph/bB.png'),  # Black bishop
+           'r': pygame.image.load('graph/bR.png'),  # Black rook
+           'q': pygame.image.load('graph/bQ.png'),  # Black queen
+           'k': pygame.image.load('graph/bK.png'),  # Black king
+           }
 
-# Initialize the screen
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Chessboard")
 
-# Load chess piece images
-piece_images = {
-    'P': pygame.image.load('graph/wP.png'),
-    'N': pygame.image.load('graph/wN.png'),
-    'B': pygame.image.load('graph/wB.png'),
-    'R': pygame.image.load('graph/wR.png'),
-    'Q': pygame.image.load('graph/wQ.png'),
-    'K': pygame.image.load('graph/wK.png'),
-    'p': pygame.image.load('graph/bP.png'),
-    'n': pygame.image.load('graph/bN.png'),
-    'b': pygame.image.load('graph/bB.png'),
-    'r': pygame.image.load('graph/bR.png'),
-    'q': pygame.image.load('graph/bQ.png'),
-    'k': pygame.image.load('graph/bK.png'),
-}
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        self.draw_chessboard(qp)
+        self.draw_pieces(qp)
+        self.draw_moves(qp)  # Add this line to draw arrows indicating moves
 
-def scale_piece_images():
-    for piece in piece_images:
-        piece_images[piece] = pygame.transform.scale(piece_images[piece], (SCREEN_WIDTH // 8, SCREEN_HEIGHT // 8))
+    def draw_chessboard(self, qp):
+        LIGHT_SQUARE = (240, 217, 181)  # Light square color
+        DARK_SQUARE = (181, 136, 99)   # Dark square color
 
-def draw_chessboard():
-    for row in range(8):
-        for col in range(8):
-            color = LIGHT_SQUARE if (row + col) % 2 == 0 else DARK_SQUARE
-            pygame.draw.rect(screen, color, pygame.Rect(col * SCREEN_WIDTH // 8, (7 - row) * SCREEN_HEIGHT // 8, SCREEN_WIDTH // 8, SCREEN_HEIGHT // 8))
+        for row in range(8):
+            for col in range(8):
+                color = LIGHT_SQUARE if (row + col) % 2 == 0 else DARK_SQUARE
+                x, y = col * self.square_size, (7 - row) * self.square_size  # Reverse the row calculation
+                qp.fillRect(x, y, self.square_size, self.square_size, QtGui.QColor(*color))
 
-def draw_pieces(board):
-    for row in range(8):
-        for col in range(8):
-            piece = board.piece_at(8 * row + col)
+    def draw_pieces(self, qp):
+        for row in range(8):
+            for col in range(8):
+                piece = self.board.piece_at(8 * (7 - row) + col)  # Reverse the row calculation
+                if piece is not None:
+                    piece_img = self.piece_images[piece.symbol()]
+                    x, y = col * self.square_size, row * self.square_size
+                    piece_img = pygame.transform.scale(piece_img, (self.square_size, self.square_size))
+                    image_data = pygame.image.tostring(piece_img, 'RGBA')
+                    img_qt = QtGui.QImage(image_data, self.square_size, self.square_size, QtGui.QImage.Format_ARGB32)
+                    pixmap = QtGui.QPixmap.fromImage(img_qt)
+                    qp.drawPixmap(x, y, pixmap)
+    def draw_moves(self, qp):
+        # Draw arrows to indicate moves
+        if self.selected_square is not None and self.target_square is not None:
+            selected_col, selected_row = chess.square_file(self.selected_square), 7 - chess.square_rank(self.selected_square)
+            target_col, target_row = chess.square_file(self.target_square), 7 - chess.square_rank(self.target_square)
+
+            # Calculate the coordinates of the centers of the selected and target squares
+            #selected_x, selected_y = selected_col * self.square_size + self.square_size // 2, selected_row * self.square_size + self.square_size // 2
+            #target_x, target_y = target_col * self.square_size + self.square_size // 2, target_row * self.square_size + self.square_size // 2
+
+            # Draw an arrow from the selected square to the target square
+            #qp.setPen(QtGui.QPen(Qt.blue, 2, Qt.SolidLine))
+            #qp.drawLine(selected_x, selected_y, target_x, target_y)
+     
+        
+    def mousePressEvent(self, event):
+        col, row = event.x() // self.square_size, 7 - event.y() // self.square_size
+        square = chess.square(col, row)
+
+        if self.selected_square is None:
+            # Select a piece if the square contains one
+            piece = self.board.piece_at(square)
             if piece is not None:
-                piece_img = piece_images[piece.symbol()]
-                screen.blit(piece_img, pygame.Rect(col * SCREEN_WIDTH // 8, (7 - row) * SCREEN_HEIGHT // 8, SCREEN_WIDTH // 8, SCREEN_HEIGHT // 8))
+                self.selected_square = square
+        else:
+            # Try to make a move
+            move = chess.Move(self.selected_square, square)
+            if move in self.board.legal_moves:
+                self.target_square = square
+                self.board.push(move)
+            else:
+                self.selected_square = None
 
+        self.update()  # Trigger a repaint to update the display
 
-def get_square_from_mouse(pos):
-    x, y = pos
-    col = x // (SCREEN_WIDTH // 8)
-    row = y // (SCREEN_HEIGHT // 8)
-    return chess.square(col, 7 - row)  # Invert the row to match chess notation
+class MyWindow(QMainWindow):
+    def __init__(self,  parent=None):
+        super(MyWindow, self).__init__(parent)
+        #SCREEN_WIDTH, SCREEN_HEIGHT = surface.get_width(), surface.get_height()
+        self.setWindowTitle("Example GUI with QtWidgets")
+        self.setGeometry(100, 100, 420, 550)
 
-def main():
-    scale_piece_images()
+        #self.data = surface.get_buffer().raw
+        #self.image = QtGui.QImage(self.data, SCREEN_HEIGHT, SCREEN_WIDTH, QtGui.QImage.Format_RGB32)
 
-    running = True
-    board = chess.Board()
+        self.initUI()
 
-    selected_square = None
+    def initUI(self):
+        self.layout = QVBoxLayout()
 
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        self.text_field = QTextEdit()
+        self.text_field.setFixedSize(250, 50)
+        self.layout.addWidget(self.text_field)
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # Left mouse button
-                    square = get_square_from_mouse(event.pos)
-                    piece = board.piece_at(square)
+        self.button_change = QPushButton("enter")
+        self.button_change.clicked.connect(self.change_central_widget)
+        self.button_change.setFixedSize(200, 50)
+        self.layout.addWidget(self.button_change)
 
-                    if selected_square is None and piece is not None:
-                        selected_square = square
-                    elif selected_square is not None:
-                        move = chess.Move(selected_square, square)
+        self.chessboard_widget = ChessboardWidget()
+        self.layout.addWidget(self.chessboard_widget)
 
-                        if move in board.legal_moves:
-                            board.push(move)
-                        selected_square = None
+        self.current_central_widget = QWidget()
+        self.current_central_widget.setLayout(self.layout)
 
-        draw_chessboard()
-        draw_pieces(board)
+        self.setCentralWidget(self.current_central_widget)
 
-        pygame.display.flip()
+    def change_central_widget(self):
+        content = self.text_field.toPlainText()
+        print(content)
 
-    pygame.quit()
+    # def paintEvent(self, event):
+    #     qp = QtGui.QPainter()
+    #     qp.begin(self)
+    #     qp.drawImage(100, 40, self.image)
+    #     qp.end()
 
 if __name__ == "__main__":
-    main()
+    app = QApplication(sys.argv)
+   
+    window = MyWindow()
+    window.show()
+    try:
+        sys.exit(app.exec_())
+    except SystemExit:
+        print('Closing Window...')
