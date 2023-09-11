@@ -145,7 +145,7 @@ class MyWindow(QMainWindow):
         
         client = berserk.Client()
         
-        games=client.games.export_by_player(content)
+        games=client.games.export_by_player(content,evals=False,perf_type="rapid",clocks=False,analysed=True)
         #to zajmuje dużo czasu 
         games1 = list(games)
         
