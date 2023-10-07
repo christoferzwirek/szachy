@@ -5,9 +5,33 @@ Created on Sun Jun  4 16:03:14 2023
 @author: radek
 """
 
+'''
+#name=None
+import sys
 
+from GUI2 import MyWindow
+from PyQt5.QtWidgets import QApplication
+
+
+
+app = QApplication(sys.argv)
+window = MyWindow()
+window.show()
+
+
+
+# Create a list to store connections
+
+try:
+    sys.exit(app.exec_())
+except SystemExit:
+    from GUI2 import N
+    
+print(N)
+'''
+import chess
+import chess.engine
 import berserk
-
 session = berserk.TokenSession("lip_4M09fZ192Ysehbmnhh26")
 
 client = berserk.Client(session=session)
@@ -31,18 +55,40 @@ for klucz_zew, dict_wew in response.items():
     print()
 """
 #print(session)
-a=client.account.get_email()
-print(f"{a}")
+#a=client.account.get_email()
+#print(f"{a}")
 user=input("podaj nazwę użytkownika ")#AinsOowl
-ile_gier=input("podaj ile gier ")
-games=client.games.export_by_player(user,max=ile_gier)
+#ile_gier=input("podaj ile gier ")
+
+games=client.games.export_by_player(user,max=3,perf_type='rapid')#
 games1 = list(games)
 game_id = games1[0]['id']
 pgn=client.games.export(game_id,as_pgn=True)
 
+# Ścieżka do pliku wykonywalnego Stockfisha
+stockfish_path = "stockfish/stockfish-windows-x86-64.exe"
+# Utwórz obiekt silnika szachowego
+engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+
+import io
+# Pozycja, którą chcesz zanalizować
+board= chess.pgn.read_game(io.StringIO(pgn))
+print(board)
+# Analiza pozycji przez Stockfisha
+info = engine.analyse(board.board(), chess.engine.Limit(time=0.7))  # Limit czasowy analizy (np. 0.1 sekundy)
+
+best_move = info.get("pv", [])[0]
+print("Najlepszy ruch:", best_move)
+print("Ocena pozycji:", info["score"])
+
+# Zamknij silnik szachowy po zakończeniu
+engine.quit()
+
+"""
 for słownik in games1:
     for klucz, wartość in słownik.items():
         if(klucz=='speed'):
             print(f"\ntępo: {wartość}")
         if(klucz=='moves'):
             print(f"ruchy: {wartość}")
+"""        
