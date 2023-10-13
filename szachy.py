@@ -30,8 +30,10 @@ except SystemExit:
 print(N)
 '''
 import chess
+import chess.pgn
 import chess.engine
 import berserk
+import pandas as pd
 session = berserk.TokenSession("lip_4M09fZ192Ysehbmnhh26")
 
 client = berserk.Client(session=session)
@@ -71,15 +73,27 @@ stockfish_path = "stockfish/stockfish-windows-x86-64.exe"
 engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 
 import io
-# Pozycja, którą chcesz zanalizować
-board= chess.pgn.read_game(io.StringIO(pgn))
-print(board)
-# Analiza pozycji przez Stockfisha
-info = engine.analyse(board.board(), chess.engine.Limit(time=0.7))  # Limit czasowy analizy (np. 0.1 sekundy)
 
-best_move = info.get("pv", [])[0]
-print("Najlepszy ruch:", best_move)
-print("Ocena pozycji:", info["score"])
+# Pozycja, którą chcesz zanalizować
+game= chess.pgn.read_game(io.StringIO(pgn))
+
+# Inicjalizuj planszę
+board = game.board()
+result=[]
+# Iteruj przez ruchy gry i analizuj każdą pozycję
+for ply,move in enumerate(game.mainline_moves()):
+    board.push(move)
+
+    if ply ==20:
+        break
+    analysis = engine.analyse(board, chess.engine.Limit(time=0.5))
+    #result.append(analysis.score)
+    # Wyświetl lub zapisz wyniki analizy dla każdego ruchu
+    print(f"Move: {move}, Evaluation: {analysis['score']}")  # Limit czasowy analizy (np. 0.1 sekundy)
+    
+#best_move = info.get("pv", [])[0]
+#print("Najlepszy ruch:", best_move)
+#print("Ocena pozycji:", info["score"])
 
 # Zamknij silnik szachowy po zakończeniu
 engine.quit()
