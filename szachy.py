@@ -34,6 +34,7 @@ import chess.pgn
 import chess.engine
 import berserk
 import pandas as pd
+import io
 session = berserk.TokenSession("lip_4M09fZ192Ysehbmnhh26")
 
 client = berserk.Client(session=session)
@@ -59,43 +60,63 @@ for klucz_zew, dict_wew in response.items():
 #print(session)
 #a=client.account.get_email()
 #print(f"{a}")
-user=input("podaj nazwę użytkownika ")#AinsOowl
-#ile_gier=input("podaj ile gier ")
 
-games=client.games.export_by_player(user,max=3,perf_type='rapid')#
-games1 = list(games)
-game_id = games1[0]['id']
-pgn=client.games.export(game_id,as_pgn=True)
 
 # Ścieżka do pliku wykonywalnego Stockfisha
 stockfish_path = "stockfish/stockfish-windows-x86-64.exe"
 # Utwórz obiekt silnika szachowego
 engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 
-import io
 
-# Pozycja, którą chcesz zanalizować
-game= chess.pgn.read_game(io.StringIO(pgn))
+user=input("podaj nazwę użytkownika ").lower()#AinsOowl
+#ile_gier=input("podaj ile gier ")
 
-# Inicjalizuj planszę
-board = game.board()
+games=client.games.export_by_player(user,max=3,perf_type='rapid')#
+games1 = list(games)
 result=[]
-# Iteruj przez ruchy gry i analizuj każdą pozycję
-for ply,move in enumerate(game.mainline_moves()):
-    board.push(move)
-
-    if ply ==20:
-        break
-    analysis = engine.analyse(board, chess.engine.Limit(time=0.5))
-    #result.append(analysis.score)
-    # Wyświetl lub zapisz wyniki analizy dla każdego ruchu
-    print(f"Move: {move}, Evaluation: {analysis['score']}")  # Limit czasowy analizy (np. 0.1 sekundy)
+for i in range(len(games1)):
     
-#best_move = info.get("pv", [])[0]
-#print("Najlepszy ruch:", best_move)
-#print("Ocena pozycji:", info["score"])
+    game_id = games1[i]['id']
+    pgn=client.games.export(game_id,as_pgn=True)
 
-# Zamknij silnik szachowy po zakończeniu
+
+
+    
+    
+    # Pozycja, którą chcesz zanalizować
+    game= chess.pgn.read_game(io.StringIO(pgn))
+    headers = {key: value.lower() for key, value in game.headers.items()}
+    
+    
+    
+    # Inicjalizuj planszę
+    board = game.board()
+    
+    # Iteruj przez ruchy gry i analizuj każdą pozycję
+    for ply,move in enumerate(game.mainline_moves()):
+        board.push(move)
+    
+        if ply ==20:
+            break
+        analysis = engine.analyse(board, chess.engine.Limit(time=0.5)) # Limit czasowy analizy (np. 0.1 sekundy)
+        #result.append(analysis.score)
+        # Wyświetl lub zapisz wyniki analizy dla każdego ruchu
+        if headers['White'] == user:
+            info =analysis['score']
+            ocena=info.white()
+        elif headers['Black'] == user:
+            info =analysis['score']
+            ocena=info.black()
+        else:
+            print(f"{user} is not part of this game or their color is not specified in PGN headers.")
+        result.append(ocena.cp)
+        #print(f"Move: {move}, Evaluation: {analysis['score']}") 
+    
+    #best_move = info.get("pv", [])[0]
+    #print("Najlepszy ruch:", best_move)
+    #print("Ocena pozycji:", info["score"])
+    
+    # Zamknij silnik szachowy po zakończeniu
 engine.quit()
 
 """
