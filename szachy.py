@@ -35,6 +35,7 @@ import chess.engine
 import berserk
 import pandas as pd
 import io
+import time
 session = berserk.TokenSession("lip_4M09fZ192Ysehbmnhh26")
 
 client = berserk.Client(session=session)
@@ -70,8 +71,8 @@ engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 
 user=input("podaj nazwę użytkownika ").lower()#AinsOowl
 #ile_gier=input("podaj ile gier ")
-
-games=client.games.export_by_player(user,max=3,perf_type='rapid')#
+start=time.time()
+games=client.games.export_by_player(user,max=25,perf_type='rapid')#
 games1 = list(games)
 result=[]
 for i in range(len(games1)):
@@ -87,7 +88,8 @@ for i in range(len(games1)):
     game= chess.pgn.read_game(io.StringIO(pgn))
     headers = {key: value.lower() for key, value in game.headers.items()}
     
-    
+    preocena=0
+    ocena =0
     
     # Inicjalizuj planszę
     board = game.board()
@@ -95,7 +97,8 @@ for i in range(len(games1)):
     # Iteruj przez ruchy gry i analizuj każdą pozycję
     for ply,move in enumerate(game.mainline_moves()):
         board.push(move)
-    
+        #print(move)
+        #print(procena)
         if ply ==20:
             break
         analysis = engine.analyse(board, chess.engine.Limit(time=0.5)) # Limit czasowy analizy (np. 0.1 sekundy)
@@ -109,17 +112,30 @@ for i in range(len(games1)):
             ocena=info.black()
         else:
             print(f"{user} is not part of this game or their color is not specified in PGN headers.")
-        result.append(ocena.cp)
-        #print(f"Move: {move}, Evaluation: {analysis['score']}") 
+        if preocena-ocena.cp>200:
+            #print(f"ocena {ocena.cp},pporzednia ocena {preocena}")
+            #print(preocena-ocena.cp)
+            #print(f"Move: {move}, Evaluation: {analysis['score']}")     
+            result.append((board.fen(),move))
+        preocena=ocena.cp
     
     #best_move = info.get("pv", [])[0]
     #print("Najlepszy ruch:", best_move)
     #print("Ocena pozycji:", info["score"])
     
     # Zamknij silnik szachowy po zakończeniu
+
+
 engine.quit()
+stop=time.time()
+executio= stop - start
+
+# Wyświetl czas wykonania
+print(f"Czas wykonania programu: {executio:.2f} sekundy")
 
 """
+for fen,m in result:
+    print(m)
 for słownik in games1:
     for klucz, wartość in słownik.items():
         if(klucz=='speed'):
