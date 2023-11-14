@@ -44,12 +44,16 @@ session = berserk.TokenSession("lip_4M09fZ192Ysehbmnhh26")
 
 client = berserk.Client(session=session)
 
-
+#profiler
 def is_move_in_opening_book(board, move, opening_book_path):
+    start2=time.time()
     with chess.polyglot.open_reader(opening_book_path) as reader:
         for entry in reader.find_all(board):
             if entry.move == move:
+                print(entry)
+                
                 return True
+    
     return False
 
 
@@ -59,22 +63,19 @@ stockfish_path = "stockfish/stockfish-windows-x86-64.exe"
 opening_book_path = "komodo.bin"
 # Utwórz obiekt silnika szachowego
 engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+#board2 = game.board()
 
 
 user=input("podaj nazwę użytkownika ").lower()#AinsOowl
 #ile_gier=input("podaj ile gier ")
 start=time.time()
-games=client.games.export_by_player(user,max=25,perf_type='rapid')#
+games=client.games.export_by_player(user,max=100,perf_type='rapid')#
 games1 = list(games)
 result=[]
 for i in range(len(games1)):
     
     game_id = games1[i]['id']
-    pgn=client.games.export(game_id,as_pgn=True)
-
-
-
-    
+    pgn=client.games.export(game_id,as_pgn=True) 
     
     # Pozycja, którą chcesz zanalizować
     game= chess.pgn.read_game(io.StringIO(pgn))
@@ -85,17 +86,17 @@ for i in range(len(games1)):
     
     # Inicjalizuj planszę
     board = game.board()
-    
+    print("\n")
     # Iteruj przez ruchy gry i analizuj każdą pozycję
     for ply,move in enumerate(game.mainline_moves()):
         
-                
+        
         if is_move_in_opening_book(board, move, opening_book_path):
             #print(f"{move} is in opeingn book")
             board.push(move)
         else:
             board.push(move)
-            if ply ==20:
+            if ply ==20:#kończenie debiutu
                 break
             analysis = engine.analyse(board, chess.engine.Limit(time=0.5)) # Limit czasowy analizy (np. 0.1 sekundy)
             #result.append(analysis.score)
