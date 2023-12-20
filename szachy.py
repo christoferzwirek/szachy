@@ -63,10 +63,10 @@ def checkmiss(user):
     opening_book_path = "komodo.bin"
     # Utwórz obiekt silnika szachowego
     engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-    #board2 = game.board()
     
     
-    games=client.games.export_by_player(user,max=10,perf_type='rapid')#
+    a2 = None 
+    games=client.games.export_by_player(user,max=5,perf_type='rapid')#
     games1 = list(games)
     result=[]
     for i in range(len(games1)):
@@ -76,25 +76,29 @@ def checkmiss(user):
         # Pozycja, którą chcesz zanalizować
         game= chess.pgn.read_game(io.StringIO(pgn))
         headers = {key: value.lower() for key, value in game.headers.items()}
-        
+        game2= chess.pgn.read_game(io.StringIO(pgn))
+        headers = {key: value.lower() for key, value in game2.headers.items()}
         preocena=0
         ocena =0
-        
+        board2 = game2.board()
         # Inicjalizuj planszę
-        board = game.board()
-        print("\n")
+        board1 = game.board()
+        #print("\n")
         # Iteruj przez ruchy gry i analizuj każdą pozycję
         for ply,move in enumerate(game.mainline_moves()):
-            
-            
-            if is_move_in_opening_book(board, move, opening_book_path):
+           
+            a2_local = a2 
+            if is_move_in_opening_book(board1, move, opening_book_path):
                 #print(f"{move} is in opeingn book")
-                board.push(move)
+                board1.push(move)
+                board2.push(move)
             else:
-                board.push(move)
+                
+                board1.push(move)
                 if ply ==20:#kończenie debiutu
                     break
-                analysis = engine.analyse(board, chess.engine.Limit(time=0.5)) # Limit czasowy analizy (np. 0.1 sekundy)
+                analysis = engine.analyse(board1, chess.engine.Limit(time=0.5)) # Limit czasowy analizy (np. 0.1 sekundy)
+                
                 #result.append(analysis.score)
                 # Wyświetl lub zapisz wyniki analizy dla każdego ruchu
                 if headers['White'] == user:
@@ -105,13 +109,24 @@ def checkmiss(user):
                     ocena=info.black()
                 else:
                     print(f"{user} is not part of this game or their color is not specified in PGN headers.")
+                if isinstance(ocena, chess.engine.Mate):
+                # Handle mate score, for example, set preocena to a large value
+                   preocena=10000
+                
                 if preocena-ocena.cp>200:
                     #print(f"ocena {ocena.cp},pporzednia ocena {preocena}")
                     #print(preocena-ocena.cp)
-                    #print(f"Move: {move}, Evaluation: {analysis['score']}")     
-                    result.append((board.fen(),move))
+                    #print(f"Move: {move}, Evaluation: {analysis['score']}")
+                    
+                    best_move = a2_local.get("pv", [])[0]
+
+                    #print("Best Move:", best_move)
+                    
+                    result.append((board2.fen(),move,best_move))
+                a2 = analysis
+                #print(a2)
                 preocena=ocena.cp
-        
+                board2.push(move)
         #best_move = info.get("pv", [])[0]
         #print("Najlepszy ruch:", best_move)
         #print("Ocena pozycji:", info["score"])
@@ -120,15 +135,32 @@ def checkmiss(user):
     engine.quit()
     return result
 
+from collections import Counter
+
+
+def most_common_moves(games):
+    
+    counter = Counter(games)
+    most_common = counter.most_common()
+    return most_common
+
 if __name__ == '__main__':
     
     user=input("podaj nazwę użytkownika ").lower()#AinsOowl
     #ile_gier=input("podaj ile gier ")
     start=time.time()
-    checkmiss(user)
+    games=checkmiss(user)
     stop=time.time()
     executio= stop - start
- 
+    
+    #print(games)
+
+
+    # Przykładowe użycie:
+    # games to lista tupli (pozycja FEN, ruch)
+    #games = [(fen1, move1), (fen2, move2), ...]
+    most_common = most_common_moves(games)
+    #print(most_common)
     # Wyświetl czas wykonania
     print(f"Czas wykonania programu: {executio:.2f} sekundy")
  

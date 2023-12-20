@@ -25,6 +25,9 @@ class ChessboardWidget(QWidget):
         self.square_size = self.SCREEN_WIDTH // 8
         self.selected_square = None  # Add this line to define the selected_square attribute
         self.target_square = None
+        self.error_highlight_color = Qt.red  # Domyślny kolor zaznaczania błędu
+        self.highlighted_squares = []
+        self.highlighted_squares2=[]
         self.piece_images = {
            'P': pygame.image.load('graph/wP.png'),  # White pawn
            'N': pygame.image.load('graph/wN.png'),  # White knight
@@ -44,9 +47,93 @@ class ChessboardWidget(QWidget):
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         self.draw_chessboard(qp)
+        qp.end()
+    
+        qp = QtGui.QPainter(self)
         self.draw_pieces(qp)
-        self.draw_moves(qp)  # Add this line to draw arrows indicating moves
+        qp.end()
+    
+        qp = QtGui.QPainter(self)
+        self.draw_moves(qp)
+        qp.end()
+    
+        qp = QtGui.QPainter(self)
+        self.draw_error_highlight(qp)
+        qp.end()
+        qp = QtGui.QPainter(self)
+        self.draw_error_highlight2(qp)
+        qp.end()
+    #rysowanie
+    def algebraic_to_coordinates(self, algebraic_notation):
+        """
+        Konwertuje notację szachową (np. 'e2e4') na indeksy kolumny i wiersza (np. (4, 6)).
 
+        :param algebraic_notation: Notacja szachowa ruchu.
+        :return: Krotka (kolumna, wiersz).
+        """
+        col_mapping = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7}
+        row1 = 8 - int(algebraic_notation[1])
+        
+        col1 = col_mapping[algebraic_notation[0]]
+        row2 = 8 - int(algebraic_notation[3])
+        
+        col2= col_mapping[algebraic_notation[2]]
+        #print(row1, col1,row2,col2)
+        return row1, col1,row2,col2
+    def highlight_error_algebraic(self, algebraic_notation):
+        coordinates = self.algebraic_to_coordinates(algebraic_notation)
+    
+        #print(coordinates)
+        if coordinates:
+            row1, col1,row2,col2 = coordinates
+            self.highlighted_squares.append((col1, row1))
+            self.highlighted_squares.append((col2, row2))
+            self.update()  # Ponowne rysowanie szachownicy
+    def highlight_error_algebraic2(self, algebraic_notation):
+        coordinates = self.algebraic_to_coordinates(algebraic_notation)
+    
+        #print(coordinates)
+        if coordinates:
+            row1, col1,row2,col2 = coordinates
+            self.highlighted_squares2.append((col1, row1))
+            self.highlighted_squares2.append((col2, row2))
+            self.update()  # Ponowne rysowanie szachownicy
+            
+          
+    def draw_error_highlight(self, qp):
+        # Rysuj zaznaczenie błędu
+        if self.highlighted_squares:
+            for i in self.highlighted_squares:
+                col, row = i
+                #print(col, row)
+                x, y = col * self.square_size, row * self.square_size
+                #self.error_highlight_color.setAlpha(127)
+                qp.fillRect(x, y, self.square_size, self.square_size,QtGui.QColor(255, 0, 0, 127))
+
+    def draw_error_highlight2(self, qp):
+        # Rysuj zaznaczenie błędu
+        if self.highlighted_squares2:
+            for i in self.highlighted_squares2:
+                col, row = i
+                #print(col, row)
+                x, y = col * self.square_size, row * self.square_size
+                #self.error_highlight_color.setAlpha(127)
+                qp.fillRect(x, y, self.square_size, self.square_size,QtGui.QColor(0, 0, 255, 127))        
+    def move_to_algebraic(self, move):
+        """
+        Konwertuje obiekt Move na notację szachową (np. 'e2e4').
+        
+        :param move: Obiekt Move.
+        :return: Notacja szachowa ruchu.
+        """
+        from_square = chess.square_name(move.from_square)
+        to_square = chess.square_name(move.to_square)
+        return f"{from_square}{to_square}"
+    
+    #ustawianie szachownicy
+    def set_board(self, fen):
+        self.board = chess.Board(fen)
+        self.update()
     def draw_chessboard(self, qp):
         LIGHT_SQUARE = (240, 217, 181)  # Light square color
         DARK_SQUARE = (181, 136, 99)   # Dark square color
@@ -140,18 +227,29 @@ class MyWindow(QMainWindow):
     def return_text(self):
         content = self.text_field.toPlainText()
         global N
-        N=content
+        
         self.content_changed.emit(content)
+        self.chessboard_widget.highlighted_squares=[]
+        self.chessboard_widget.highlighted_squares2=[]
+        self.update()
         
-        client = berserk.Client()
-        
-        games=client.games.export_by_player(content,evals=False,perf_type="rapid",clocks=False,analysed=True)
+        #games=client.games.export_by_player(content,evals=False,perf_type="rapid",clocks=False,analysed=True)
         #to zajmuje dużo czasu 
-        games1 = list(games)
-        
-        game_id = games1[0]['id']
-        
-        return client.games.export(game_id,as_pgn=True)
+        #games1 = list(games)
+        from szachy import checkmiss
+        game_id=checkmiss(content)
+        N=game_id
+        if game_id:
+            fen_result=game_id[0][0]
+        if fen_result:
+            # Ustaw planszę w widżecie szachowym na podstawie FEN
+            self.chessboard_widget.set_board(fen_result)
+            self.chessboard_widget.highlight_error_algebraic(self.chessboard_widget.move_to_algebraic(game_id[0][1]))
+            self.chessboard_widget.highlight_error_algebraic2(self.chessboard_widget.move_to_algebraic(game_id[0][2]))
+        else:
+            self.chessboard_widget.set_board(chess.STARTING_FEN)
+        #return client.games.export(game_id,as_pgn=True)
+        return game_id
         
         
 
