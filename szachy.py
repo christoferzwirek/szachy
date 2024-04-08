@@ -58,6 +58,7 @@ def is_move_in_opening_book(board, move, opening_book_path):
 
 
 def checkmiss(user):
+    
     # Ścieżka do pliku wykonywalnego Stockfisha
     stockfish_path = "stockfish/stockfish-windows-x86-64.exe"
     opening_book_path = "komodo.bin"
@@ -66,7 +67,8 @@ def checkmiss(user):
     
     
     a2 = None 
-    games=client.games.export_by_player(user,max=5,perf_type='rapid')#
+    games=client.games.export_by_player(user,max=7,perf_type='rapid')#
+    
     games1 = list(games)
     result=[]
     for i in range(len(games1)):
@@ -95,23 +97,27 @@ def checkmiss(user):
             else:
                 
                 board1.push(move)
-                if ply ==20:#kończenie debiutu
+                if ply ==30:#kończenie debiutu
                     break
+                #print(move)
                 analysis = engine.analyse(board1, chess.engine.Limit(time=0.5)) # Limit czasowy analizy (np. 0.1 sekundy)
                 
                 #result.append(analysis.score)
                 # Wyświetl lub zapisz wyniki analizy dla każdego ruchu
-                if headers['White'] == user:
+                if headers['White'] == user.lower():
                     info =analysis['score']
                     ocena=info.white()
-                elif headers['Black'] == user:
+                elif headers['Black'] == user.lower():
                     info =analysis['score']
                     ocena=info.black()
                 else:
+                    #print(headers['White'])
+                    #print('ja ',user)
                     print(f"{user} is not part of this game or their color is not specified in PGN headers.")
                 if isinstance(ocena, chess.engine.Mate):
                 # Handle mate score, for example, set preocena to a large value
                    preocena=10000
+                #print(ocena)
                 
                 if preocena-ocena.cp>200:
                     #print(f"ocena {ocena.cp},pporzednia ocena {preocena}")

@@ -237,16 +237,22 @@ class MyWindow(QMainWindow):
         #to zajmuje dużo czasu 
         #games1 = list(games)
         from szachy import checkmiss
+        #print(content)
         game_id=checkmiss(content)
+        #print(game_id)
         N=game_id
+        #fen_result=game_id[0][0]
         if game_id:
+            #print("jestem")
             fen_result=game_id[0][0]
+            
         if fen_result:
             # Ustaw planszę w widżecie szachowym na podstawie FEN
             self.chessboard_widget.set_board(fen_result)
             self.chessboard_widget.highlight_error_algebraic(self.chessboard_widget.move_to_algebraic(game_id[0][1]))
             self.chessboard_widget.highlight_error_algebraic2(self.chessboard_widget.move_to_algebraic(game_id[0][2]))
         else:
+            #print(fen_result)
             self.chessboard_widget.set_board(chess.STARTING_FEN)
         #return client.games.export(game_id,as_pgn=True)
         return game_id
