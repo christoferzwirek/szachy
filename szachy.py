@@ -67,10 +67,11 @@ def checkmiss(user):
     
     
     a2 = None 
-    games=client.games.export_by_player(user,max=7,perf_type='rapid')#
+    games=client.games.export_by_player(user,max=10,perf_type='rapid',opening=True)#
     
     games1 = list(games)
     result=[]
+    l=0
     for i in range(len(games1)):
         game_id = games1[i]['id']
         pgn=client.games.export(game_id,as_pgn=True) 
@@ -78,6 +79,7 @@ def checkmiss(user):
         # Pozycja, którą chcesz zanalizować
         game= chess.pgn.read_game(io.StringIO(pgn))
         headers = {key: value.lower() for key, value in game.headers.items()}
+        #print(headers)
         game2= chess.pgn.read_game(io.StringIO(pgn))
         headers = {key: value.lower() for key, value in game2.headers.items()}
         preocena=0
@@ -87,8 +89,30 @@ def checkmiss(user):
         board1 = game.board()
         #print("\n")
         # Iteruj przez ruchy gry i analizuj każdą pozycję
+        b=0
+        
         for ply,move in enumerate(game.mainline_moves()):
-           
+            if l==10:
+                #pass
+                
+                print("git",b)
+                #break
+                
+            if move==chess.Move.from_uci("e2e4"):
+                b=b+1
+            if move==chess.Move.from_uci("e7e5"):
+                b=b+1
+                
+            #print(b,move,ply)
+            if b!=2 and ply>1:
+                #l=l+1
+                #break
+                pass
+            if ply==2:
+                #l=l+1
+                pass
+            if ply ==23:#kończenie debiutu
+               break
             a2_local = a2 
             if is_move_in_opening_book(board1, move, opening_book_path):
                 #print(f"{move} is in opeingn book")
@@ -97,8 +121,7 @@ def checkmiss(user):
             else:
                 
                 board1.push(move)
-                if ply ==30:#kończenie debiutu
-                    break
+                
                 #print(move)
                 analysis = engine.analyse(board1, chess.engine.Limit(time=0.5)) # Limit czasowy analizy (np. 0.1 sekundy)
                 
@@ -114,11 +137,17 @@ def checkmiss(user):
                     #print(headers['White'])
                     #print('ja ',user)
                     print(f"{user} is not part of this game or their color is not specified in PGN headers.")
-                if isinstance(ocena, chess.engine.Mate):
-                # Handle mate score, for example, set preocena to a large value
-                   preocena=10000
                 #print(ocena)
-                
+                #print
+               
+                if isinstance(ocena, chess.engine.Mate) or ocena== chess.engine.MateGiven:
+                # Handle mate score, for example, set preocena to a large value
+                   preocena = 10000 if ocena.mate() > 0 else -10000
+                   #print(ocena.mate())
+                   ocena.cp=ocena.mate()
+                   
+                  # ocena.cp=0
+                #print(f"ocena {ocena.cp},pporzednia ocena {preocena}")
                 if preocena-ocena.cp>200:
                     #print(f"ocena {ocena.cp},pporzednia ocena {preocena}")
                     #print(preocena-ocena.cp)
@@ -127,7 +156,7 @@ def checkmiss(user):
                     best_move = a2_local.get("pv", [])[0]
 
                     #print("Best Move:", best_move)
-                    
+                    #print(game_id)
                     result.append((board2.fen(),move,best_move))
                 a2 = analysis
                 #print(a2)
@@ -152,8 +181,9 @@ def most_common_moves(games):
 
 if __name__ == '__main__':
     
-    user=input("podaj nazwę użytkownika ").lower()#AinsOowl
+    #user=input("podaj nazwę użytkownika ").lower()#AinsOowl
     #ile_gier=input("podaj ile gier ")
+    user="radek8640"
     start=time.time()
     games=checkmiss(user)
     stop=time.time()

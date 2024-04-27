@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Thu Aug 31 17:52:25 2023
@@ -135,8 +136,8 @@ class ChessboardWidget(QWidget):
         self.board = chess.Board(fen)
         self.update()
     def draw_chessboard(self, qp):
-        LIGHT_SQUARE = (240, 217, 181)  # Light square color
-        DARK_SQUARE = (181, 136, 99)   # Dark square color
+        LIGHT_SQUARE = (181, 136, 99)  # Light square color
+        DARK_SQUARE = (240, 217, 181)   # Dark square color
 
         for row in range(8):
             for col in range(8):
