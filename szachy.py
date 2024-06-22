@@ -40,7 +40,7 @@ import time
 
 
 
-session = berserk.TokenSession("lip_4M09fZ192Ysehbmnhh26")
+session = berserk.TokenSession("")
 
 client = berserk.Client(session=session)
 
